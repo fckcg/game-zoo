@@ -39,6 +39,19 @@ const STICKERS: Sticker[] = [
   { id: 'dragon', emoji: '🐲', name: 'Dragon', cost: 100 },
 ];
 
+const ENCOURAGEMENTS = [
+  "Awesome!", 
+  "Great Job!", 
+  "Superb!", 
+  "You're a Star!", 
+  "Fantastic!", 
+  "Correct!", 
+  "Smart!", 
+  "Keep it up!",
+  "Amazing!",
+  "Bingo!"
+];
+
 export const MathGame: React.FC = () => {
   const [stars, setStars] = useState(0);
   const [gameState, setGameState] = useState<GameState>('START');
@@ -46,6 +59,7 @@ export const MathGame: React.FC = () => {
   const [unlockedStickers, setUnlockedStickers] = useState<string[]>([]);
   const [feedback, setFeedback] = useState<'none' | 'correct' | 'wrong'>('none');
   const [streak, setStreak] = useState(0);
+  const [encouragement, setEncouragement] = useState("");
 
   // Audio Refs
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -127,13 +141,12 @@ export const MathGame: React.FC = () => {
     // Generate Options
     const opts = new Set<number>();
     opts.add(ans);
-    while (opts.size < 3) {
-      const offset = Math.floor(Math.random() * 5) - 2; // -2 to +2
+    while (opts.size < 4) { // Increased to 4 options for 2x2 grid
+      const offset = Math.floor(Math.random() * 7) - 3; 
       const fake = ans + offset;
       if (fake >= 0 && fake !== ans) {
         opts.add(fake);
       } else {
-          // Fallback for edge cases
           opts.add(ans + opts.size + 1); 
       }
     }
@@ -146,6 +159,7 @@ export const MathGame: React.FC = () => {
       options: Array.from(opts).sort(() => Math.random() - 0.5),
     });
     setFeedback('none');
+    setEncouragement("");
   };
 
   const handleAnswer = (selected: number) => {
@@ -154,10 +168,11 @@ export const MathGame: React.FC = () => {
 
     if (selected === problem.answer) {
       setFeedback('correct');
+      setEncouragement(ENCOURAGEMENTS[Math.floor(Math.random() * ENCOURAGEMENTS.length)]);
       playSound('correct');
-      setStars((s) => s + 2 + (streak > 5 ? 1 : 0)); // Bonus star for streaks
+      setStars((s) => s + 2 + (streak > 5 ? 2 : 0)); // Bonus star for streaks
       setStreak((s) => s + 1);
-      setTimeout(generateProblem, 1000);
+      setTimeout(generateProblem, 1200); 
     } else {
       setFeedback('wrong');
       playSound('wrong');
@@ -186,81 +201,98 @@ export const MathGame: React.FC = () => {
 
   if (gameState === 'START') {
     return (
-      <div className="flex flex-col items-center justify-center h-full bg-yellow-50 p-6 text-center select-none">
-        <div className="text-6xl mb-6 animate-bounce">🦁</div>
-        <h1 className="text-4xl font-black text-yellow-600 mb-2 tracking-tight">MATH ZOO</h1>
-        <p className="text-slate-500 mb-8 text-lg">Solve math problems, earn stars, and collect animals!</p>
+      <div className="flex flex-col items-center justify-center h-full bg-yellow-50 p-4 text-center select-none">
+        <div className="text-7xl md:text-8xl mb-6 animate-bounce">🦁</div>
+        <h1 className="text-4xl md:text-6xl font-black text-yellow-600 mb-3 tracking-tight">MATH ZOO</h1>
+        <p className="text-slate-500 mb-8 text-base md:text-xl max-w-xs md:max-w-md mx-auto">
+          Solve math problems, earn stars, and collect cute animals!
+        </p>
         <button 
           onClick={startGame}
-          className="bg-yellow-500 hover:bg-yellow-400 text-white text-2xl font-bold py-4 px-12 rounded-full shadow-[0_4px_0_rgb(202,138,4)] active:shadow-none active:translate-y-1 transition-all"
+          className="bg-yellow-500 hover:bg-yellow-400 text-white text-xl md:text-3xl font-bold py-4 px-12 rounded-full shadow-[0_6px_0_rgb(202,138,4)] active:shadow-none active:translate-y-2 transition-all w-full max-w-xs"
         >
-          START PLAYING
+          START
         </button>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col h-full bg-yellow-50 relative select-none font-sans">
+    <div className={`flex flex-col h-full transition-colors duration-500 relative select-none font-sans ${streak > 5 ? 'bg-orange-100' : 'bg-yellow-50'}`}>
       
+      {/* Feedback Flash Overlay */}
+      {feedback === 'correct' && <div className="absolute inset-0 bg-green-500/20 pointer-events-none z-50 animate-pulse" />}
+      {feedback === 'wrong' && <div className="absolute inset-0 bg-red-500/20 pointer-events-none z-50 animate-[pulse_0.2s_ease-in-out]" />}
+
       {/* Top Bar */}
-      <div className="bg-white p-4 shadow-sm flex justify-between items-center z-10">
+      <div className="bg-white/80 backdrop-blur p-3 shadow-sm flex justify-between items-center z-10 shrink-0 border-b border-yellow-100/50">
         <button 
           onClick={() => setGameState(gameState === 'SHOP' ? 'PLAYING' : 'SHOP')}
-          className="bg-indigo-100 hover:bg-indigo-200 text-indigo-700 font-bold py-2 px-4 rounded-lg transition-colors flex items-center gap-2"
+          className="bg-indigo-100 hover:bg-indigo-200 text-indigo-700 font-bold py-2 px-4 rounded-xl transition-colors flex items-center gap-2 text-sm md:text-base shadow-sm active:scale-95"
         >
-           {gameState === 'SHOP' ? '🔙 Back to Game' : '🛍️ Sticker Shop'}
+           {gameState === 'SHOP' ? '🔙 Game' : '🛍️ Shop'}
         </button>
 
-        <div className="flex items-center gap-2 bg-yellow-100 px-4 py-2 rounded-full border-2 border-yellow-200">
-           <span className="text-2xl">⭐️</span>
-           <span className="text-xl font-bold text-yellow-700">{stars}</span>
+        <div className="flex items-center gap-2 bg-yellow-100 px-4 py-1.5 rounded-full border-2 border-yellow-200 shadow-inner">
+           <span className="text-xl md:text-2xl drop-shadow-sm">⭐️</span>
+           <span className="text-xl md:text-2xl font-black text-yellow-700">{stars}</span>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 overflow-y-auto p-4">
+      <div className="flex-1 overflow-y-auto p-4 flex flex-col max-w-4xl mx-auto w-full">
         
         {/* --- GAME VIEW --- */}
         {gameState === 'PLAYING' && problem && (
-          <div className="h-full flex flex-col items-center justify-center max-w-md mx-auto">
+          <div className="flex-1 flex flex-col items-center justify-center w-full py-2">
              
              {/* Streak Display */}
-             {streak > 2 && (
-                 <div className="text-orange-500 font-bold animate-pulse mb-4">
-                    🔥 {streak} Streak!
-                 </div>
-             )}
+             <div className="h-10 mb-2 flex items-center justify-center">
+                {streak > 1 ? (
+                    <div className={`font-black animate-bounce text-lg md:text-2xl flex items-center gap-2 px-4 py-1 rounded-full border-2 ${streak > 5 ? 'bg-red-100 text-red-600 border-red-200' : 'bg-orange-100 text-orange-500 border-orange-200'}`}>
+                        🔥 {streak} Streak!
+                        {streak > 5 && <span className="text-xs bg-red-500 text-white px-2 py-0.5 rounded-full">x2 Stars</span>}
+                    </div>
+                ) : <div className="text-transparent select-none">.</div>}
+             </div>
 
              {/* Problem Card */}
-             <div className={`bg-white w-full rounded-3xl shadow-xl p-8 mb-8 flex flex-col items-center border-b-8 border-slate-200 transition-transform ${feedback === 'wrong' ? 'animate-[shake_0.5s_ease-in-out]' : ''}`}>
-                <div className="flex items-center gap-4 text-6xl md:text-8xl font-black text-slate-700">
-                   <div className="w-24 text-center">{problem.num1}</div>
+             <div className={`
+                relative bg-white w-full max-w-md rounded-3xl shadow-2xl p-8 md:p-12 mb-6 md:mb-10 flex flex-col items-center 
+                border-b-[8px] border-slate-200 transition-transform 
+                ${feedback === 'wrong' ? 'animate-[shake_0.4s_ease-in-out]' : ''}
+             `}>
+                <div className="flex items-center justify-center gap-2 md:gap-4 text-6xl sm:text-7xl md:text-8xl font-black text-slate-700 w-full tracking-tighter">
+                   <div className="w-16 sm:w-24 text-center">{problem.num1}</div>
                    <div className="text-yellow-500">{problem.operator}</div>
-                   <div className="w-24 text-center">{problem.num2}</div>
+                   <div className="w-16 sm:w-24 text-center">{problem.num2}</div>
                    <div className="text-slate-300">=</div>
-                   <div className="w-24 text-center text-indigo-500">?</div>
+                   <div className="w-16 sm:w-24 text-center text-indigo-500">?</div>
                 </div>
                 
+                {/* Encouragement Overlay */}
                 {feedback === 'correct' && (
-                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                        <div className="text-9xl animate-ping">⭐️</div>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/95 rounded-3xl z-10 animate-in fade-in duration-200 backdrop-blur-sm">
+                        <div className="text-8xl md:text-9xl animate-[bounce_0.5s_infinite] mb-4">⭐️</div>
+                        <div className="text-3xl md:text-5xl font-black text-yellow-500 tracking-wider animate-pulse uppercase drop-shadow-md text-center px-4">
+                            {encouragement}
+                        </div>
                     </div>
                 )}
              </div>
 
-             {/* Options */}
-             <div className="grid grid-cols-3 gap-4 w-full">
+             {/* Options (2x2 Grid for better Mobile tapping) */}
+             <div className="grid grid-cols-2 gap-3 md:gap-6 w-full max-w-md mb-auto">
                 {problem.options.map((opt, idx) => (
                   <button
                     key={idx}
                     onClick={() => handleAnswer(opt)}
                     disabled={feedback === 'correct'}
                     className={`
-                        py-6 rounded-2xl text-4xl font-bold text-slate-600 shadow-[0_4px_0_rgb(203,213,225)] transition-all
-                        active:shadow-none active:translate-y-1 hover:brightness-105
-                        ${feedback === 'correct' && opt === problem.answer ? 'bg-green-500 text-white shadow-[0_4px_0_rgb(22,163,74)]' : 'bg-white'}
-                        ${feedback === 'wrong' && opt !== problem.answer ? 'opacity-50' : ''}
+                        h-24 md:h-32 rounded-2xl text-4xl md:text-6xl font-black text-slate-600 shadow-[0_6px_0_rgb(203,213,225)] transition-all
+                        active:shadow-none active:translate-y-2 active:bg-slate-100 touch-manipulation border-2 border-slate-100
+                        ${feedback === 'correct' && opt === problem.answer ? 'bg-green-500 text-white shadow-[0_6px_0_rgb(22,163,74)] border-green-600' : 'bg-white'}
+                        ${feedback === 'wrong' && opt !== problem.answer ? 'opacity-30 scale-95 bg-slate-100' : 'hover:brightness-105'}
                     `}
                   >
                     {opt}
@@ -269,56 +301,60 @@ export const MathGame: React.FC = () => {
              </div>
 
              {/* Collection Preview (Tiny Zoo) */}
-             <div className="mt-12 flex gap-2 flex-wrap justify-center opacity-50 grayscale-[0.3]">
-                {unlockedStickers.length === 0 && <span className="text-slate-400 text-sm italic">Visit the shop to buy pets!</span>}
+             <div className="mt-4 flex gap-2 flex-wrap justify-center opacity-70 min-h-[40px]">
+                {unlockedStickers.length === 0 && <span className="text-slate-400 text-sm italic bg-white/50 px-3 py-1 rounded-full">Earn stars to buy pets!</span>}
                 {unlockedStickers.slice(0, 8).map(id => {
                     const s = STICKERS.find(st => st.id === id);
-                    return <span key={id} className="text-2xl" title={s?.name}>{s?.emoji}</span>
+                    return <span key={id} className="text-2xl md:text-3xl animate-in zoom-in" title={s?.name}>{s?.emoji}</span>
                 })}
-                {unlockedStickers.length > 8 && <span className="text-slate-400 text-xs self-center">+{unlockedStickers.length - 8} more</span>}
              </div>
           </div>
         )}
 
         {/* --- SHOP VIEW --- */}
         {gameState === 'SHOP' && (
-            <div className="max-w-2xl mx-auto">
-                <h2 className="text-2xl font-bold text-indigo-800 mb-6 text-center">Adopt a Pet</h2>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+            <div className="w-full pb-8">
+                <div className="text-center mb-6 bg-white/50 p-4 rounded-2xl">
+                    <h2 className="text-2xl md:text-3xl font-black text-indigo-800">Pet Shop</h2>
+                    <p className="text-slate-500 text-sm">Use your stars to adopt friends!</p>
+                </div>
+                
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 md:gap-4">
                     {STICKERS.map((sticker) => {
                         const isUnlocked = unlockedStickers.includes(sticker.id);
                         const canAfford = stars >= sticker.cost;
 
                         return (
-                            <div 
+                            <button 
                                 key={sticker.id}
                                 onClick={() => buySticker(sticker)}
+                                disabled={isUnlocked || (!canAfford && !isUnlocked)}
                                 className={`
-                                    relative bg-white p-4 rounded-xl border-b-4 transition-all cursor-pointer
+                                    relative bg-white p-3 md:p-4 rounded-2xl border-b-4 transition-all flex flex-col items-center
                                     ${isUnlocked 
-                                        ? 'border-green-200 bg-green-50' 
+                                        ? 'border-green-200 bg-green-50 cursor-default' 
                                         : canAfford 
-                                            ? 'border-indigo-200 hover:-translate-y-1' 
-                                            : 'border-slate-200 opacity-60 cursor-not-allowed'}
+                                            ? 'border-indigo-200 hover:-translate-y-1 active:translate-y-0 active:shadow-none active:border-t-4 active:border-b-0' 
+                                            : 'border-slate-200 opacity-50 cursor-not-allowed grayscale'}
                                 `}
                             >
-                                <div className="text-6xl text-center mb-2">
-                                    {isUnlocked ? sticker.emoji : <span className="grayscale opacity-20">{sticker.emoji}</span>}
+                                <div className="text-5xl md:text-7xl mb-2 transform transition-transform group-hover:scale-110">
+                                    {isUnlocked ? sticker.emoji : sticker.emoji} 
                                 </div>
-                                <div className="text-center font-bold text-slate-700 text-sm">{sticker.name}</div>
+                                <div className="font-bold text-slate-700 text-sm">{sticker.name}</div>
                                 
                                 {!isUnlocked && (
-                                    <div className={`mt-2 text-center text-sm font-bold py-1 rounded-full ${canAfford ? 'bg-yellow-100 text-yellow-700' : 'bg-slate-100 text-slate-400'}`}>
+                                    <div className={`mt-2 text-center text-xs md:text-sm font-bold px-3 py-1 rounded-full ${canAfford ? 'bg-yellow-100 text-yellow-700' : 'bg-slate-100 text-slate-400'}`}>
                                         ⭐️ {sticker.cost}
                                     </div>
                                 )}
                                 
                                 {isUnlocked && (
-                                    <div className="absolute top-2 right-2 text-green-500">
+                                    <div className="absolute top-2 right-2 bg-green-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold shadow-sm">
                                         ✓
                                     </div>
                                 )}
-                            </div>
+                            </button>
                         )
                     })}
                 </div>
