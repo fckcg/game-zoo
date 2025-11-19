@@ -1,0 +1,5 @@
+{
+  "name": "math game",
+  "description": "A fully interactive, SVG-based virtual electric fan with adjustable speeds and realistic animations, built with React and Tailwind CSS.",
+  "requestFramePermissions": []
+}
